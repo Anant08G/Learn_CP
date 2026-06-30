@@ -1,0 +1,12 @@
+# Executables
+Learn_CP
+tracker
+
+# Object files
+*.o
+
+# Build directories
+build/
+
+# Editor files
+*.swp
