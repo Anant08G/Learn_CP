@@ -1,11 +1,7 @@
-# Executables
-Learn_CP
-tracker
-
 # Object files
 *.o
 
-# Build directories
+# build directory files
 build/
 
 # Editor files

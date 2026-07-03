@@ -7,139 +7,115 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
-// Time constants in seconds
-const long long DAY = 86400;
-const long long P1_MIN = 1.5 * DAY;
-const long long P1_MAX = 3 * DAY;
-const long long P2_MIN = 6 * DAY;
-const long long P2_MAX = 8 * DAY;
+#include <cctype>
 
 // Resolves the absolute path to your home directory
-std::string getFilePath()
-{
-    const char* homeDir = std::getenv("HOME");
-
-    if (homeDir == nullptr)
-    {
-        return "problems.csv";
-    }
-
-    return std::string(homeDir) + "/.cptrack.csv";
+std::string get_file_path(){
+    const char* home_dir = std::getenv("HOME");
+    if(home_dir == nullptr) return "problems.csv";
+    return std::string(home_dir) + "/.cptrack.csv";
 }
-
 // Current UNIX timestamp
-long long getCurrentTime()
-{
+long long get_current_time(){
     return std::chrono::duration_cast<std::chrono::seconds>(
                std::chrono::system_clock::now().time_since_epoch())
         .count();
 }
-
-void add_problem(const std::string& url)
-{
-    std::ofstream file(getFilePath(), std::ios::app);
-
-    file << getCurrentTime() << "," << url << "\n";
-
-    std::cout << "Problem tracked successfully.\n";
+// Checks wheather string "a" is same as "b" irrespective of the letter cases.
+bool is_equal(const std::string& a, const std::string& b) {
+    return std::equal(a.begin(), a.end(), b.begin(), b.end(),
+                      [](char a, char b) {
+                          return std::tolower(static_cast<unsigned char>(a)) ==
+                                 std::tolower(static_cast<unsigned char>(b));
+                      });
 }
+void add_problem(){
+    std::string name, url;
+    std::cout << "Enter the Problem Name: "; std::getline(std::cin, name);
+    std::cout << "Enter the Problem link: "; std::getline(std::cin, url);
+    std::ofstream file(get_file_path(), std::ios::app);
+    file << get_current_time() <<','<< name <<','<< url <<'\n';
+    std::cout << "Problem has been added to be tracked.\n";
+}
+void problem_list(){
+    std::ifstream file(get_file_path());
 
-void remind(int phase)
-{
-    std::ifstream file(getFilePath());
-
-    if (!file.is_open())
-    {
+    if (!file.is_open()){
         std::cout << "No tracked problems found.\n";
         return;
     }
-
+    std::cout << "--------------------------------------------------------------------------------------------------------------------------\n";
+    std::cout << std::left << std::setw(4) << "No." 
+              << std::setw(18) << "Problem_Name" 
+              << std::setw(9) << "Time" 
+              << "URL\n";
+    std::cout << "--------------------------------------------------------------------------------------------------------------------------\n";
     std::string line;
     std::string url;
-    std::string timeStr;
+    std::string time;
+    std::string name;
 
-    long long currentTime = getCurrentTime();
-
-    bool foundAny = false;
-
-    std::cout << "=== Phase " << phase << " Reminders ===\n";
-
-    while (getline(file, line))
-    {
+    long long current_time = get_current_time();
+    bool found = false;
+    int index = 1;
+    
+    while(std::getline(file, line)){
         std::stringstream ss(line);
-
-        getline(ss, timeStr, ',');
-        getline(ss, url, ',');
-
-        long long savedTime = std::stoll(timeStr);
-
-        long long diff = currentTime - savedTime;
-
-        if (phase == 1 && diff >= P1_MIN && diff <= P1_MAX)
-        {
-            std::cout << "[Phase 1 Ready] " << url << "\n";
-            foundAny = true;
-        }
-        else if (phase == 2 && diff >= P2_MIN && diff <= P2_MAX)
-        {
-            std::cout << "[Phase 2 Ready] " << url << "\n";
-            foundAny = true;
-        }
+        std::getline(ss, time, ',');
+        std::getline(ss, name, ',');
+        std::getline(ss, url);
+        long long time_elapsed = current_time - std::stoll(time);
+        long long hours = time_elapsed / 3600;
+        if(hours >= 48) time = std::to_string(hours/24) + " days";
+        else time = std::to_string(hours) + " hours";
+        std::cout << std::left 
+                  << std::setw(4) << index++
+                  << std::setw(18) << name
+                  << std::setw(9) << time
+                  << url <<'\n';
+        found = true;
     }
-
-    if (!foundAny)
-    {
-        std::cout << "No problems due for this phase right now.\n";
-    }
+    if(!found) std::cout << "There is no problem to track in the database\n";
+    std::cout << "--------------------------------------------------------------------------------------------------------------------------\n";
 }
 
-void mark_done(const std::string& targetUrl)
-{
-    std::string filePath = getFilePath();
+void remove(const std::string& target) {
+    std::string file_path = get_file_path();
+    std::ifstream file(file_path);
 
-    std::ifstream fileIn(filePath);
+    if (!file.is_open()) {
+        std::cout << "Error: Could not open database file.\n";
+        return;
+    }
 
-    std::vector<std::string> remainingLines;
-
+    std::vector<std::string> remaining_lines;
     std::string line;
-    std::string timeStr;
-    std::string url;
-
     bool found = false;
 
-    while (getline(fileIn, line))
-    {
+    while (std::getline(file, line)) {
         std::stringstream ss(line);
+        std::string time_str, name, url;
 
-        getline(ss, timeStr, ',');
-        getline(ss, url, ',');
+        std::getline(ss, time_str, ',');
+        std::getline(ss, name, ',');
+        std::getline(ss, url);
 
-        if (url == targetUrl)
-        {
+        if (url == target || is_equal(name, target)) {
             found = true;
-        }
-        else
-        {
-            remainingLines.push_back(line);
+        } else {
+            remaining_lines.push_back(line);
         }
     }
+    file.close();
 
-    fileIn.close();
-
-    if (found)
-    {
-        std::ofstream fileOut(filePath, std::ios::trunc);
-
-        for (const std::string& l : remainingLines)
-        {
-            fileOut << l << "\n";
+    // Only rewrite the file if we actually found and removed something
+    if (found) {
+        std::ofstream file_out(file_path, std::ios::trunc);
+        for (const std::string& l : remaining_lines) {
+            file_out << l << '\n';
         }
-
-        std::cout << "Problem marked as done and removed from tracking.\n";
-    }
-    else
-    {
-        std::cout << "Error: URL not found in your tracking list.\n";
+        std::cout << "Problem '" << target << "' removed from tracking.\n";
+    } else {
+        std::cout << "Error: No problem matching match found.\n";
     }
 }
