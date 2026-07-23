@@ -1,8 +1,31 @@
-# Object files
-*.o
-
-# build directory files
+# Build
 build/
+bin/
+out/
 
-# Editor files
+# Executables
+*.out
+*.exe
+*.o
+*.obj
+*.a
+*.so
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+Makefile
+
+# clangd
+.cache/
+
+# Editors
+.vscode/
+.idea/
+
+# Vim
 *.swp
+*.swo
+*~
