@@ -1,5 +1,5 @@
-#include "log.h"
-#include "common.h"
+#include "log.hpp"
+#include "common.hpp"
 
 #include <iostream>
 #include <fstream>

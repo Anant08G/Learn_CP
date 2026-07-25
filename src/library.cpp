@@ -1,5 +1,5 @@
-#include "library.h"
-#include "common.h"
+#include "library.hpp"
+#include "common.hpp"
 
 #include <iostream>
 #include <fstream>

@@ -1,5 +1,5 @@
-#include "queue.h"
-#include "common.h"
+#include "queue.hpp"
+#include "common.hpp"
 
 #include <iostream>
 #include <fstream>
